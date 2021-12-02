@@ -1,0 +1,88 @@
+/*
+ * WebSocketClientSSL.ino
+ *
+ *  Created on: 10.12.2015
+ *
+ *  note SSL is only possible with the ESP8266
+ *
+ */
+
+#include <Arduino.h>
+
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+
+#include <WebSocketsClient.h>
+
+#include <Hash.h>
+
+ESP8266WiFiMulti WiFiMulti;
+WebSocketsClient webSocket;
+
+
+#define USE_SERIAL Serial1
+
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+
+
+    switch(type) {
+        case WStype_DISCONNECTED:
+            Serial.printf("[WSc] Disconnected!\n");
+            break;
+        case WStype_CONNECTED:
+            {
+                Serial.printf("[WSc] Connected to url: %s\n",  payload);
+				
+			    // send message to server when Connected
+				webSocket.sendTXT("{\"action\": \"sendMessage\"}");
+            }
+            break;
+        case WStype_TEXT:
+            Serial.printf("[WSc] get text: %s\n", payload);
+
+			// send message to server
+			// webSocket.sendTXT("message here");
+            break;
+        case WStype_BIN:
+            Serial.printf("[WSc] get binary length: %u\n", length);
+            hexdump(payload, length);
+
+            // send data to server
+            // webSocket.sendBIN(payload, length);
+            break;
+    }
+
+}
+
+void setup() {
+    // USE_SERIAL.begin(921600);
+    Serial.begin(115200);
+
+    //Serial.setDebugOutput(true);
+    Serial.setDebugOutput(true);
+
+    Serial.println();
+    Serial.println();
+    Serial.println();
+
+      for(uint8_t t = 4; t > 0; t--) {
+          Serial.printf("[SETUP] BOOT WAIT %d...\n", t);
+          Serial.flush();
+          delay(1000);
+      }
+
+    WiFiMulti.addAP("TURKSAT-KABLONET-81BB-2.4G", "67b052b4");
+
+    //WiFi.disconnect();
+    while(WiFiMulti.run() != WL_CONNECTED) {
+        delay(100);
+    }
+
+    webSocket.beginSSL("t578g7q30a.execute-api.us-east-2.amazonaws.com", 443,"/production");
+    webSocket.onEvent(webSocketEvent);
+
+}
+
+void loop() {
+    webSocket.loop();
+}
