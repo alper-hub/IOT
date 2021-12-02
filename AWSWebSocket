@@ -1,0 +1,53 @@
+const AWS = require('aws-sdk');
+
+const ENDPOINT = 't578g7q30a.execute-api.us-east-2.amazonaws.com/production/';
+const client = new AWS.ApiGatewayManagementApi({ endpoint: ENDPOINT });
+
+const sendToOne = async (id, body) => {
+    console.log('sendtoOne');
+    try {
+        await client.postToConnection({
+            'ConnectionId': id,
+            'Data': Buffer.from(JSON.stringify(body))
+        }).promise();
+        console.log('annen2');
+    }
+    catch (err) {
+        console.log(err);
+    }
+};
+
+exports.handler = async (event) => {
+    
+    if (event.requestContext) {
+        
+        const connectionId = event.requestContext.connectionId;
+        const routeKey = event.requestContext.routeKey;
+        let body = {};
+        
+        try {
+            if (event.body) {
+                body = JSON.parse(event.body);
+            }
+        }
+        catch(err) {
+            
+        }
+        switch (routeKey) {
+            case '$connect':
+                console.log('connected');
+            case '$disconnect':
+                break;
+            case '$default':
+                console.log('default');
+            case 'sendMessage':
+                console.log('annen');
+                await sendToOne(connectionId, { privateMessage: 'annen'});
+        }
+    }
+    const response = {
+        statusCode: 200,
+        body: JSON.stringify('Hello from Lambda!'),
+    };
+    return response;
+};
